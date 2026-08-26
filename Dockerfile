@@ -5,11 +5,16 @@ WORKDIR /app
 # Copy build files first to leverage Docker layer caching
 COPY pom.xml mvnw ./
 COPY .mvn .mvn
+
+# Give Maven Wrapper execution permission
+RUN chmod +x mvnw
+
 RUN ./mvnw dependency:go-offline -B
 
 # Copy source and package the application
 COPY src ./src
 RUN ./mvnw package -DskipTests
+
 
 # Stage 2: Create a minimal runtime image using JRE 25
 FROM eclipse-temurin:25-jre-alpine
@@ -26,4 +31,5 @@ COPY --from=builder /app/target/*.jar app.jar
 ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
 EXPOSE 8080
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
